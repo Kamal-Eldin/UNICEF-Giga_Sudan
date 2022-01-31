@@ -111,6 +111,42 @@ class buildSplits:
 
         return split_df
 
+def get_targetarrays(split_df, target_col = 'mask'):
+    size = len(split_df)
+    labels = np.ndarray(shape = (size, 256, 256, 1), dtype= np.float32)
+    
+    for indx in range(size):
+        y = split_df.loc[indx, target_col]
+        y  = y.reshape((256,256,1))
+        labels[indx] = y 
+    return labels
+
+
+def single_overlay(ximg, mask, border):
+    
+    image = np.copy(ximg)
+    image /=  np.max(image)
+    image  *= 255
+    image = image.astype(dtype = np.uint8).squeeze()
+    mask *= 255
+    mask = mask.astype(dtype = np.uint8).squeeze()
+    border *= 255
+    border = border.astype(dtype = np.uint8).squeeze()
+
+    
+    red_canvas = np.full(image.shape, (255, 0, 0), image.dtype)
+    green_canvas = np.full(image.shape, (0, 255, 0), image.dtype)
+
+    redMask = cv.bitwise_and(red_canvas, red_canvas, mask=mask)
+    greenborder = cv.bitwise_and(green_canvas, green_canvas, mask=border)
+    out = cv.addWeighted(redMask, .5, image, 1, 0, image)
+    out = cv.addWeighted(greenborder, .5, out, 1, 0, image)
+    return out
+
+
+
+
+
 
 
 def cocodraw(self, size, index = 0,*, image_num = None):
