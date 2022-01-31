@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import pandas as pd
+import os
 from collections import defaultdict
 import cv2 as cv
 from pathlib import Path
@@ -82,6 +83,33 @@ class cocoParser:
         return pos_data
 
 
+class buildSplits:
+    '''
+    the class expects the train/val/test split images each in a folder.
+    takes in the postive data frame
+    returns a dataframe with cols : [index, segmentation coords, mask label array, border label array]
+    '''
+
+    def __init__(self, postive_df, split_imgpath, split = 'train') -> None:
+        self.postive_df = postive_df
+        self.split_imgpath = split_imgpath
+        self.split = split
+
+    def get_split_df(self):
+        split_df = pd.DataFrame (os.listdir(self.split_imgpath + f'{self.split}/'), columns = ['name'])
+        split_df = pd.merge(split_df, self.postive_df, on= 'name', how= 'left')
+
+        blank_seg = np.zeros_like(self.postive_df.loc[1, 'seg'])
+        blank_canvas = np.zeros_like(self.postive_df.loc[1, 'mask'])
+
+        split_df = split_df.replace(np.nan, 0)
+        split_df['seg'] = split_df['seg'].map(lambda x: blank_seg if type(x) is int  else x )
+        split_df['mask'] = split_df['mask'].map(lambda x: blank_canvas if type(x) is int  else x )
+        split_df['border'] = split_df['border'].map(lambda x: blank_canvas if type(x) is int  else x )
+
+        split_df.reset_index(inplace= True, drop= True)
+
+        return split_df
 
 
 
