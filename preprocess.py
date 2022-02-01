@@ -137,11 +137,10 @@ def single_overlay(ximg, mask, border):
 
 class augmentation:
 
-    def __init__(self, imgpath, seed = 32, bright_range = (.4, 1.), hue_range = 2.0, batch_size = 40) -> None:
+    def __init__(self, seed = 32, bright_range = (.4, 1.), hue_range = 2.0, batch_size = 40) -> None:
         self.seed = seed
         self.bright_range = bright_range
         self.hue_range = hue_range
-        self.imgpath = imgpath
         self.batch_size = batch_size
 
         aug_args = dict(
@@ -154,14 +153,14 @@ class augmentation:
 
         self.gen = ImageDataGenerator(**aug_args)
 
-    def __data_gen (x_gen, mask_gen, border_gen):
+    def __data_gen (self, x_gen, mask_gen, border_gen):
         while True:
             image = next(x_gen)
             ymask = next(mask_gen)
             yborder = next(border_gen)
             yield image, [ymask, yborder]
     
-    def __get_targetarrays(split_df, target_col = 'mask'):
+    def __get_targetarrays(self, split_df, target_col = 'mask'):
         size = len(split_df)
         labels = np.ndarray(shape = (size, 256, 256, 1), dtype= np.float32)
         
@@ -172,13 +171,13 @@ class augmentation:
         return labels
 
     
-    def get_splitgen (self, split_df):
+    def get_splitgen (self, split_df, imgpath):
 
         masks_arrs = self.__get_targetarrays(split_df)
         borders_arrs = self.__get_targetarrays(split_df, target_col = 'border')
         
         x_flow = self.gen.flow_from_dataframe(split_df, x_col = 'name', class_mode= None, validate_filenames= True,
-         directory= self.imgpath, batch_size=self.batch_size, seed= self.seed)
+         directory= imgpath, batch_size=self.batch_size, seed= self.seed)
 
         y_maskflow  = self.gen.flow(masks_arrs, batch_size=self.batch_size, seed= self.seed)
         y_borderflow  = self.gen.flow(borders_arrs, batch_size=self.batch_size, seed= self.seed)
