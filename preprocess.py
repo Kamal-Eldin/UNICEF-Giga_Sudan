@@ -6,6 +6,7 @@ from collections import defaultdict
 import cv2 as cv
 from pathlib import Path
 import matplotlib.pyplot as plt
+from keras_preprocessing.image import ImageDataGenerator
 
 
 
@@ -111,16 +112,6 @@ class buildSplits:
 
         return split_df
 
-def get_targetarrays(split_df, target_col = 'mask'):
-    size = len(split_df)
-    labels = np.ndarray(shape = (size, 256, 256, 1), dtype= np.float32)
-    
-    for indx in range(size):
-        y = split_df.loc[indx, target_col]
-        y  = y.reshape((256,256,1))
-        labels[indx] = y 
-    return labels
-
 
 def single_overlay(ximg, mask, border):
     
@@ -144,8 +135,56 @@ def single_overlay(ximg, mask, border):
     return out
 
 
+class augmentation:
 
+    def __init__(self, imgpath, seed = 32, bright_range = (.4, 1.), hue_range = 2.0, batch_size = 40) -> None:
+        self.seed = seed
+        self.bright_range = bright_range
+        self.hue_range = hue_range
+        self.imgpath = imgpath
+        self.batch_size = batch_size
 
+        aug_args = dict(
+                horizontal_flip=True,
+                vertical_flip=True,
+                brightness_range = self.bright_range,
+                channel_shift_range = self.hue_range,
+                rescale=1./255
+                             )
+
+        self.gen = ImageDataGenerator(**aug_args)
+
+    def __data_gen (x_gen, mask_gen, border_gen):
+        while True:
+            image = next(x_gen)
+            ymask = next(mask_gen)
+            yborder = next(border_gen)
+            yield image, [ymask, yborder]
+    
+    def __get_targetarrays(split_df, target_col = 'mask'):
+        size = len(split_df)
+        labels = np.ndarray(shape = (size, 256, 256, 1), dtype= np.float32)
+        
+        for indx in range(size):
+            y = split_df.loc[indx, target_col]
+            y  = y.reshape((256,256,1))
+            labels[indx] = y 
+        return labels
+
+    
+    def get_splitgen (self, split_df):
+
+        masks_arrs = self.__get_targetarrays(split_df)
+        borders_arrs = self.__get_targetarrays(split_df, target_col = 'border')
+        
+        x_flow = self.gen.flow_from_dataframe(split_df, x_col = 'name', class_mode= None, validate_filenames= True,
+         directory= self.imgpath, batch_size=self.batch_size, seed= self.seed)
+
+        y_maskflow  = self.gen.flow(masks_arrs, batch_size=self.batch_size, seed= self.seed)
+        y_borderflow  = self.gen.flow(borders_arrs, batch_size=self.batch_size, seed= self.seed)
+        split_gen = self.__data_gen(x_flow, y_maskflow, y_borderflow)
+
+        return split_gen
 
 
 
