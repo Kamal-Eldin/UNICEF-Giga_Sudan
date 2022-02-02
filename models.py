@@ -1,7 +1,10 @@
 from tensorflow.keras.layers import Activation, Concatenate, Conv2D, Conv2DTranspose, MaxPool2D, Input, BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy as BCE
-from tensorflow.keras.metrics import MeanIoU, BinaryAccuracy, Accuracy
+from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, TensorBoard, ModelCheckpoint
+from  tensorflow.keras.optimizers import Adam
+from metrics_losses import dice_xent, iou, precsn, recall, mAP
+%load_ext tensorboard
 import h5py
 import pandas as pd
 import numpy as np
@@ -82,3 +85,37 @@ class modelBuilder:
         model = Model(inputs = self.input_layer, outputs = [out1, out2], name = 'UNET_ARCH')
 
         return  model
+
+class train:
+
+    def __init__(self, model, log_path, checkpnt_path, lr = 0.001, round = 0) -> None:
+        self.earlyStop = EarlyStopping(monitor='val_loss', min_delta= 0.001, patience= 8, verbose= 1, restore_best_weights= True)
+        self.tensorboard = TensorBoard(log_dir= log_path)
+        self.csvlogger = CSVLogger(log_path + f'training_{round}.log')
+        self.checkpointer = ModelCheckpoint(checkpnt_path + "mchp_{round}_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )
+        self.loss_dct = {
+            "U_MASKS": dice_xent,
+            "U_BORDERS": dice_xent}
+
+        self.loss_weights = {"U_MASKS": 1.0, "U_BORDERS": 1.0}
+        self.optimizer = Adam(learning_rate= lr)
+        self.model = model.compile(optimizer= self.optimizer, loss = self.loss_dct, loss_weights= self.loss_weights , 
+          metrics=  [iou, mAP, precsn, recall])
+
+        
+    def fit(self, epochs, train_gen, val_gen, trainsteps, valsteps, batchsize):
+
+        callbacks = [self.csvlogger, self.checkpointer, self.tensorboard]
+
+        results = self.model.fit( x = train_gen, validation_data = val_gen,
+                            verbose= 1, 
+                            steps_per_epoch= trainsteps, 
+                            validation_steps= valsteps, 
+                            batch_size= batchsize, 
+                            callbacks = callbacks , 
+                            epochs = epochs)
+
+        return results
+
+    def evaluate (model_weights, test_gen):
+        
