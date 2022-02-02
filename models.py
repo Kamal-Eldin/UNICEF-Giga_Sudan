@@ -8,6 +8,8 @@ import h5py
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage import img_as_ubyte
+import cv2 as cv
 
 
 
@@ -147,4 +149,34 @@ class run_eval:
 
         return p_curve, r_curve
 
+    from skimage import img_as_ubyte
+    pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
 
+    def imglabel_overlay(self, ximg, mask, border, test = False):
+        
+        pixel_clip = np.vectorize(lambda pixel: 0 if pixel < 0.5 else 1)
+
+        mask_clr, brdr_clr = (255, 0, 0) , (0, 255, 0)
+        if test: 
+            mask_clr, brdr_clr = (0, 0, 255), (255, 255, 255) 
+            mask, border  = (pixel_clip(label).squeeze() for label in (mask, border))
+
+        image = np.copy(ximg)
+        image /=  np.max(image)
+        image *= 255
+        image = image.astype(dtype = np.uint8).squeeze()
+
+        mask *= 255
+        border *= 255
+        mask = mask.astype(dtype = np.uint8).squeeze()
+        border = border.astype(dtype = np.uint8).squeeze()
+        
+        blue_canvas = np.full(image.shape, mask_clr, image.dtype)
+        white_canvas = np.full(image.shape, brdr_clr, image.dtype)
+
+        blueMask = cv.bitwise_and(blue_canvas, blue_canvas, mask=mask)
+        whiteborder = cv.bitwise_and(white_canvas, white_canvas, mask=border)
+        out = cv.addWeighted(blueMask, .5, image, 1, 0, image)
+        out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
+        return out
+        
