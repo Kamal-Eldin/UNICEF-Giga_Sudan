@@ -4,10 +4,10 @@ from tensorflow.keras.losses import BinaryCrossentropy as BCE
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, TensorBoard, ModelCheckpoint
 from  tensorflow.keras.optimizers import Adam
 from metrics_losses import dice_xent, iou, precsn, recall, mAP
-%load_ext tensorboard
 import h5py
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 
@@ -86,7 +86,7 @@ class modelBuilder:
 
         return  model
 
-class train:
+class run_eval:
 
     def __init__(self, model, log_path, checkpnt_path, lr = 0.001, round = 0) -> None:
         self.earlyStop = EarlyStopping(monitor='val_loss', min_delta= 0.001, patience= 8, verbose= 1, restore_best_weights= True)
@@ -117,5 +117,34 @@ class train:
 
         return results
 
-    def evaluate (model_weights, test_gen):
-        
+
+    def evaluate(self, test_gen, len_xtest):
+        iouthresh_steps =[i for i in np.arange (0.1,1,.05)]
+        p_curve = []
+        r_curve = []
+
+        for step in iouthresh_steps:
+            p_scores = []
+            r_scores = []
+            for i in range (len_xtest):
+                xt , [ymask, yborder] = next(test_gen)
+                yprd_msk, yprd_brd = self.model.predict(xt)
+                p_scores.append (precsn(ymask, yprd_msk, step).numpy())
+                r_scores.append (recall(ymask, yprd_msk, step).numpy())
+                
+            p_curve.append(np.mean(p_scores))
+            r_curve.append(np.mean(r_scores))
+
+        plt.figure(figsize = (12,8))
+        plt.plot(iouthresh_steps, p_curve)
+        plt.plot(iouthresh_steps, r_curve)
+        plt.xlabel('IoU Threshold', fontsize = 14)
+        plt.xticks(iouthresh_steps, rotation = 20)
+        plt.yticks(np.arange(0,1.05, 0.05))
+        plt.ylabel('Precision | Recall', fontsize = 14)
+        plt.legend(['Precision', 'Recall'], loc='best')
+        plt.show()
+
+        return p_curve, r_curve
+
+
