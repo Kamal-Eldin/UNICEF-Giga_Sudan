@@ -152,6 +152,7 @@ class augmentation:
                              )
 
         self.gen = ImageDataGenerator(**aug_args)
+        self.testgen = ImageDataGenerator(rescale= 1./255)
 
     def __data_gen (self, x_gen, mask_gen, border_gen):
         while True:
@@ -171,16 +172,17 @@ class augmentation:
         return labels
 
     
-    def get_splitgen (self, split_df, imgpath):
+    def get_splitgen (self, split_df, imgpath, test = False):
+        gen = self.testgen if test else self.gen
 
         masks_arrs = self.__get_targetarrays(split_df)
         borders_arrs = self.__get_targetarrays(split_df, target_col = 'border')
         
-        x_flow = self.gen.flow_from_dataframe(split_df, x_col = 'name', class_mode= None, validate_filenames= True,
+        x_flow = gen.flow_from_dataframe(split_df, x_col = 'name', class_mode= None, validate_filenames= True,
          directory= imgpath, batch_size=self.batch_size, seed= self.seed)
 
-        y_maskflow  = self.gen.flow(masks_arrs, batch_size=self.batch_size, seed= self.seed)
-        y_borderflow  = self.gen.flow(borders_arrs, batch_size=self.batch_size, seed= self.seed)
+        y_maskflow  = gen.flow(masks_arrs, batch_size=self.batch_size, seed= self.seed)
+        y_borderflow  = gen.flow(borders_arrs, batch_size=self.batch_size, seed= self.seed)
         split_gen = self.__data_gen(x_flow, y_maskflow, y_borderflow)
 
         return split_gen
