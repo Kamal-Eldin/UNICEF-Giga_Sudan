@@ -3,6 +3,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy as BCE
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, TensorBoard, ModelCheckpoint
 from  tensorflow.keras.optimizers import Adam
+import tensorflow.keras.backend as K
 from metrics_losses import dice_xent, iou, precsn, recall, mAP
 import h5py
 import pandas as pd
@@ -16,7 +17,7 @@ import cv2 as cv
 class modelBuilder:
 
     
-    def __init__(self, input_shape) -> None:
+    def __init__(self, input_shape = (256, 256, 3)) -> None:
         self.input_shape = input_shape
         self.input_layer = Input (input_shape)
 
@@ -50,7 +51,7 @@ class modelBuilder:
 
 
 
-    def simple_unet (self, name = 'U-SIMPLE'):
+    def simple_unet (self, name = 'U_SIMPLE'):
 
         # ENCODE #
         x1, p1 = self._encoder_unit(self.input_layer, 32)
@@ -88,25 +89,36 @@ class modelBuilder:
 
         return  model
 
-class run_eval:
+class fit_eval:
 
-    def __init__(self, model, log_path, checkpnt_path, lr = 0.001, round = 0) -> None:
-        self.earlyStop = EarlyStopping(monitor='val_loss', min_delta= 0.001, patience= 8, verbose= 1, restore_best_weights= True)
-        self.tensorboard = TensorBoard(log_dir= log_path)
-        self.csvlogger = CSVLogger(log_path + f'training_{round}.log')
-        self.checkpointer = ModelCheckpoint(checkpnt_path + "mchp_{round}_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )
-        self.loss_dct = {
-            "U_MASKS": dice_xent,
-            "U_BORDERS": dice_xent}
-
-        self.loss_weights = {"U_MASKS": 1.0, "U_BORDERS": 1.0}
+    def __init__(self, model, simple = True, log_path = '', checkpnt_path = '', lr = 0.001) -> None:
+        self.log_path = log_path
+        self.checkpnt_path = checkpnt_path
         self.optimizer = Adam(learning_rate= lr)
-        self.model = model.compile(optimizer= self.optimizer, loss = self.loss_dct, loss_weights= self.loss_weights , 
-          metrics=  [iou, mAP, precsn, recall])
+        self.model = model
 
-        
-    def fit(self, epochs, train_gen, val_gen, trainsteps, valsteps, batchsize):
+        if simple:
+            self.loss = dice_xent 
+            self.loss_weights = None
+        else:
+            self.loss = { "U_MASKS": dice_xent, "U_BORDERS": dice_xent }
+            self.loss_weights = {"U_MASKS": 1.0, "U_BORDERS": 1.0}
+                                                                            
 
+        self.model.compile(
+        optimizer= self.optimizer, 
+        loss= self.loss,
+        loss_weights = self.loss_weights,
+        metrics= [iou, mAP, precsn, recall])
+       
+
+    def fit(self, train_gen, val_gen, trainsteps, valsteps, epochs = 3, batchsize = 1, round = 0): 
+        self.round = round
+        self.earlyStop = EarlyStopping(monitor='val_loss', min_delta= 0.001, patience= 8, verbose= 1, restore_best_weights= True)
+        self.tensorboard = TensorBoard(log_dir= self.log_path)
+        self.csvlogger = CSVLogger(self.log_path + f'training_{round}.log')
+        self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{round}_' +"mchp_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )  
+       
         callbacks = [self.csvlogger, self.checkpointer, self.tensorboard]
 
         results = self.model.fit( x = train_gen, validation_data = val_gen,
@@ -130,9 +142,10 @@ class run_eval:
             r_scores = []
             for i in range (len_xtest):
                 xt , [ymask, yborder] = next(test_gen)
-                yprd_msk, yprd_brd = self.model.predict(xt)
-                p_scores.append (precsn(ymask, yprd_msk, step).numpy())
-                r_scores.append (recall(ymask, yprd_msk, step).numpy())
+                ypred = self.model.predict(xt)
+                ypred = ypred[0] if type(ypred) is list else ypred
+                p_scores.append (precsn(ymask, ypred, step).numpy())
+                r_scores.append (recall(ymask, ypred, step).numpy())
                 
             p_curve.append(np.mean(p_scores))
             r_curve.append(np.mean(r_scores))
@@ -149,7 +162,6 @@ class run_eval:
 
         return p_curve, r_curve
 
-    from skimage import img_as_ubyte
     pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
 
     def imglabel_overlay(self, ximg, mask, border, test = False):
@@ -179,4 +191,4 @@ class run_eval:
         out = cv.addWeighted(blueMask, .5, image, 1, 0, image)
         out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
         return out
-        
+

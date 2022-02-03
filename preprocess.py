@@ -91,13 +91,12 @@ class buildSplits:
     returns a dataframe with cols : [index, segmentation coords, mask label array, border label array]
     '''
 
-    def __init__(self, postive_df, split_imgpath, split = 'train') -> None:
+    def __init__(self, postive_df, split_imgpath) -> None:
         self.postive_df = postive_df
         self.split_imgpath = split_imgpath
-        self.split = split
 
-    def get_split_df(self):
-        split_df = pd.DataFrame (os.listdir(self.split_imgpath + f'{self.split}/'), columns = ['name'])
+    def get_split_df(self, split = 'train'):
+        split_df = pd.DataFrame (os.listdir(self.split_imgpath + f'{split}/'), columns = ['name'])
         split_df = pd.merge(split_df, self.postive_df, on= 'name', how= 'left')
 
         blank_seg = np.zeros_like(self.postive_df.loc[1, 'seg'])
@@ -187,7 +186,35 @@ class augmentation:
 
         return split_gen
 
+def label_overlay(ximg, mask, border, pred = False):
+    
+    pixel_clip = np.vectorize(lambda pixel: 0 if pixel < 0.5 else 1)
 
+    mask_clr, brdr_clr = (255, 0, 0) , (0, 255, 0)
+    if pred: 
+        mask_clr, brdr_clr = (0, 0, 255), (255, 255, 255) 
+        mask, border  = (pixel_clip(label).squeeze() for label in (mask, border))
+
+    image = np.copy(ximg)
+    image /=  np.max(image)
+    image *= 255
+    image = image.astype(dtype = np.uint8).squeeze()
+
+    mask *= 255
+    border *= 255
+    mask = mask.astype(dtype = np.uint8).squeeze()
+    border = border.astype(dtype = np.uint8).squeeze()
+    
+    blue_canvas = np.full(image.shape, mask_clr, image.dtype)
+    white_canvas = np.full(image.shape, brdr_clr, image.dtype)
+
+    blueMask = cv.bitwise_and(blue_canvas, blue_canvas, mask=mask)
+    whiteborder = cv.bitwise_and(white_canvas, white_canvas, mask=border)
+    out = cv.addWeighted(blueMask, .5, image, 1, 0, image)
+    out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
+    return out
+
+      
 
 def cocodraw(self, size, index = 0,*, image_num = None):
 
