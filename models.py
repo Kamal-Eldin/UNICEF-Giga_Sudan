@@ -144,8 +144,8 @@ class fit_eval:
                 xt , [ymask, yborder] = next(test_gen)
                 ypred = self.model.predict(xt)
                 ypred = ypred[0] if type(ypred) is list else ypred
-                p_scores.append (precsn(ymask, ypred, step).numpy())
-                r_scores.append (recall(ymask, ypred, step).numpy())
+                p_scores.append (precsn(ymask, ypred, step))
+                r_scores.append (recall(ymask, ypred, step))
                 
             p_curve.append(np.mean(p_scores))
             r_curve.append(np.mean(r_scores))

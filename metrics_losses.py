@@ -46,7 +46,9 @@ def dice_xent(true, pred):
 def conf_matrix (true, pred, iou_threshold = 0.5):
   iou_score = iou(true, pred)
   TP, FP, FN = 0, 0, 0
-  
+
+  pos_class = 1. if k.sum (true) > 0  else 0.
+
   yt, yp = cast_flat(true, pred)
 
   if k.sum(true) > 0 and k.sum(pred) > 0:
@@ -61,20 +63,21 @@ def conf_matrix (true, pred, iou_threshold = 0.5):
   elif k.sum(true) <= 0 and k.sum(pred) > 0:
     FP += 1
 
-  TP, FP, FN = (k.cast(count, 'float32') for count in (TP, FP, FN) )
-  return TP, FP, FN
+  TP, FP, pos_class = (k.cast(count, 'float32') for count in (TP, FP, pos_class) )
+  return TP, FP, pos_class
 
 #####################################################
 
 def precsn(true, pred, iou_threshold = 0.5):
   eps = k.epsilon()
-  TP, FP, FN = conf_matrix (true, pred, iou_threshold)
+  TP, FP, pos_class = conf_matrix (true, pred, iou_threshold)
   return (TP + eps ) / (TP + FP + eps)
 
 def recall(true, pred, iou_threshold = 0.5):
   eps = k.epsilon()
-  TP, FP, FN = conf_matrix (true, pred, iou_threshold)
-  return (TP + eps) / (TP + FN + eps )
+  TP, FP, pos_class = conf_matrix (true, pred, iou_threshold)
+  return (TP + eps) / (pos_class + eps )
+
 
 def mAP (true, pred):
   prcsn_scores = []
