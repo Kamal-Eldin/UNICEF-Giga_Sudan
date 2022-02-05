@@ -1,3 +1,5 @@
+import tensorflow as tf
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.layers import Activation, Concatenate, Conv2D, Conv2DTranspose, MaxPool2D, Input, BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy as BCE
@@ -89,27 +91,33 @@ class modelBuilder:
 
         return  model
 
-class fit_eval:
+class fit_eval(modelBuilder):
 
-    def __init__(self, model, simple = True, log_path = '', checkpnt_path = '', lr = 0.001) -> None:
-        self.log_path = log_path
-        self.checkpnt_path = checkpnt_path
-        self.optimizer = Adam(learning_rate= lr)
-        self.model = model
+    def __init__(self, simple = True, log_path = '', checkpnt_path = '', lr = 0.001, input_shape = (256, 256, 3)) -> None:
+        super().__init__(input_shape)
 
         if simple:
+            self.model = self.simple_unet()
             self.loss = dice_xent 
             self.loss_weights = None
         else:
+            self.model = self.compound_unet()
             self.loss = { "U_MASKS": dice_xent, "U_BORDERS": dice_xent }
             self.loss_weights = {"U_MASKS": 1.0, "U_BORDERS": 1.0}
-                                                                            
 
+        self.optimizer = Adam(learning_rate= lr)
+        self.summary = self.model.summary
+        self.plot = plot_model(self.model, show_shapes=True)
+                                                                          
+        self.log_path = log_path
+        self.checkpnt_path = checkpnt_path
+        
         self.model.compile(
         optimizer= self.optimizer, 
         loss= self.loss,
         loss_weights = self.loss_weights,
         metrics= [iou, mAP, precsn, recall])
+        
        
 
     def fit(self, train_gen, val_gen, trainsteps, valsteps, epochs = 3, batchsize = 1, round = 0): 
