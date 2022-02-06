@@ -23,10 +23,10 @@ def __calculate_bbx (bbx_list):
 class cocoParser:
     """[summary]
     """
-    def __init__(self, cocopath, imagespath ) -> None:
+    def __init__(self, cocopath ) -> None:
         
         self.cocopath = cocopath
-        self.imagespath = imagespath
+        #self.imagespath = imagespath
         
         with open(cocopath, 'rb') as f:
             coco_labels = json.load(f)
@@ -38,7 +38,7 @@ class cocoParser:
         self.bbxs = [dct.get('bbox') for dct in coco_labels['annotations']]
         self.names_ids = [(dct['id'], dct['file_name']) for dct in coco_labels['images']]
 
-        
+    
     def postive_data(self):
       
         def __formatsegs (lst):
@@ -80,7 +80,7 @@ class cocoParser:
         pos_data['mask'] = pos_data['seg'].apply(lambda x: __createmask(x, shape ) )
         pos_data['mask'] = pos_data['seg'].apply(lambda x: __createmask(x, shape ) )
         pos_data['border'] = pos_data['seg'].apply(lambda x: __create_border(x, shape, thickness = 4))
-
+        
         return pos_data
 
 
@@ -111,37 +111,32 @@ class buildSplits:
 
         return split_df
 
-
-def single_overlay(ximg, mask, border):
-    
-    image = np.copy(ximg)
-    image /=  np.max(image)
-    image  *= 255
-    image = image.astype(dtype = np.uint8).squeeze()
-    mask *= 255
-    mask = mask.astype(dtype = np.uint8).squeeze()
-    border *= 255
-    border = border.astype(dtype = np.uint8).squeeze()
-
-    
-    red_canvas = np.full(image.shape, (255, 0, 0), image.dtype)
-    green_canvas = np.full(image.shape, (0, 255, 0), image.dtype)
-
-    redMask = cv.bitwise_and(red_canvas, red_canvas, mask=mask)
-    greenborder = cv.bitwise_and(green_canvas, green_canvas, mask=border)
-    out = cv.addWeighted(redMask, .5, image, 1, 0, image)
-    out = cv.addWeighted(greenborder, .5, out, 1, 0, image)
-    return out
-
-
 class augmentation:
 
-    def __init__(self, seed = 32, bright_range = (.4, 1.), hue_range = 2.0, batch_size = 40) -> None:
-        self.seed = seed
-        self.bright_range = bright_range
-        self.hue_range = hue_range
-        self.batch_size = batch_size
-
+    # kwargs = {'seed' : 32,
+    # 'bright_range': (.4, 1.), 
+    # 'hue_range' : 2.0,
+    # 'batch_size' : 1,
+    # 'rotation': None,
+    # 'zoom': None,
+    # 'interpolation': None}
+    
+    def __init__(self, user_dct = None ) -> None:
+        
+        self.seed = 32
+        self.bright_range = (.4, 1.)
+        self.hue_range = 2.0
+        self.batch_size = 1
+        self.rotation = None
+        self.zoom = None
+        self.interpolation = None
+        
+        if user_dct:
+            for k, v in user_dct.items():
+                if k in self.__dict__:
+                    setattr(self, k, v)
+                else:
+                    raise KeyError(k)
         aug_args = dict(
                 horizontal_flip=True,
                 vertical_flip=True,
@@ -152,15 +147,20 @@ class augmentation:
 
         self.gen = ImageDataGenerator(**aug_args)
         self.testgen = ImageDataGenerator(rescale= 1./255)
+        keys =  ['seed', 'bright_range', 'hue_range' ,'batch_size', 'rotation' ,'zoom', 'interpolation']
+        self.aug_dct = {key: self.__dict__.get(key) for key in keys}
+        
 
-    def __data_gen (self, x_gen, mask_gen, border_gen):
+    @staticmethod
+    def __data_gen (x_gen, mask_gen, border_gen):
         while True:
             image = next(x_gen)
             ymask = next(mask_gen)
             yborder = next(border_gen)
             yield image, [ymask, yborder]
-    
-    def __get_targetarrays(self, split_df, target_col = 'mask'):
+
+    @staticmethod
+    def __get_targetarrays(split_df, target_col = 'mask'):
         size = len(split_df)
         labels = np.ndarray(shape = (size, 256, 256, 1), dtype= np.float32)
         
@@ -185,6 +185,10 @@ class augmentation:
         split_gen = self.__data_gen(x_flow, y_maskflow, y_borderflow)
 
         return split_gen
+
+
+
+
 
 def label_overlay(ximg, mask, border, pred = False):
     
@@ -214,7 +218,29 @@ def label_overlay(ximg, mask, border, pred = False):
     out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
     return out
 
-      
+
+
+def single_overlay(ximg, mask, border):
+    
+    image = np.copy(ximg)
+    image /=  np.max(image)
+    image  *= 255
+    image = image.astype(dtype = np.uint8).squeeze()
+    mask *= 255
+    mask = mask.astype(dtype = np.uint8).squeeze()
+    border *= 255
+    border = border.astype(dtype = np.uint8).squeeze()
+
+    
+    red_canvas = np.full(image.shape, (255, 0, 0), image.dtype)
+    green_canvas = np.full(image.shape, (0, 255, 0), image.dtype)
+
+    redMask = cv.bitwise_and(red_canvas, red_canvas, mask=mask)
+    greenborder = cv.bitwise_and(green_canvas, green_canvas, mask=border)
+    out = cv.addWeighted(redMask, .5, image, 1, 0, image)
+    out = cv.addWeighted(greenborder, .5, out, 1, 0, image)
+    return out
+
 
 def cocodraw(self, size, index = 0,*, image_num = None):
 

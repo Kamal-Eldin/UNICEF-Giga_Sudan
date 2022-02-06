@@ -91,7 +91,7 @@ class modelBuilder:
 
         return  model
 
-class fit_eval(modelBuilder):
+class fitEval(modelBuilder):
 
     def __init__(self, simple = True, log_path = '', checkpnt_path = '', lr = 0.001, input_shape = (256, 256, 3)) -> None:
         super().__init__(input_shape)
@@ -172,7 +172,8 @@ class fit_eval(modelBuilder):
 
     pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
 
-    def imglabel_overlay(self, ximg, mask, border, test = False):
+    @staticmethod
+    def imglabel_overlay(ximg, mask, border, test = False):
         
         pixel_clip = np.vectorize(lambda pixel: 0 if pixel < 0.5 else 1)
 
