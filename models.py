@@ -120,22 +120,34 @@ class fitEval(modelBuilder):
         
        
 
-    def fit(self, train_gen, val_gen, trainsteps, valsteps, epochs = 3, batchsize = 1, round = 0): 
+    def fit(self, train_gen, val_gen, round, user_dct = None): 
         self.round = round
+        self.epochs = 2
+        self.batchsize = 1
+        self.trainsteps = 10 // self.batchsize
+        self.valsteps = 10 // self.batchsize
+
+        if user_dct:
+            for k,v in user_dct.items():
+                if k in self.__dict__:
+                    setattr(self, k, v)
+                else:
+                    raise KeyError(k)
+
         self.earlyStop = EarlyStopping(monitor='val_loss', min_delta= 0.001, patience= 8, verbose= 1, restore_best_weights= True)
         self.tensorboard = TensorBoard(log_dir= self.log_path)
-        self.csvlogger = CSVLogger(self.log_path + f'training_{round}.log')
-        self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{round}_' +"mchp_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )  
+        self.csvlogger = CSVLogger(self.log_path + f'training_{self.round}.log')
+        self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{self.round}_' +"mchp_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )  
        
         callbacks = [self.csvlogger, self.checkpointer, self.tensorboard]
 
         results = self.model.fit( x = train_gen, validation_data = val_gen,
                             verbose= 1, 
-                            steps_per_epoch= trainsteps, 
-                            validation_steps= valsteps, 
-                            batch_size= batchsize, 
+                            steps_per_epoch= self.trainsteps, 
+                            validation_steps= self.valsteps, 
+                            batch_size= self.batchsize, 
                             callbacks = callbacks , 
-                            epochs = epochs)
+                            epochs = self.epochs)
 
         return results
 

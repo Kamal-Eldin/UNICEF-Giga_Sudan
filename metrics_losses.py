@@ -84,6 +84,6 @@ def mAP (true, pred):
   for iou_thresold in np.arange(.5,.95,0.05):
     prcsn_scores.append(precsn(true, pred, iou_thresold))
 
-  mAP = np.sum(prcsn_scores)/len(prcsn_scores)
+  mAP = k.sum(prcsn_scores)/len(prcsn_scores)
   return mAP
 
