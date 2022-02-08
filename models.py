@@ -122,10 +122,10 @@ class fitEval(modelBuilder):
 
     def fit(self, train_gen, val_gen, round, user_dct = None): 
         self.round = round
-        self.epochs = 2
-        self.batchsize = 1
-        self.trainsteps = 10 // self.batchsize
-        self.valsteps = 10 // self.batchsize
+        self.epochs = 100
+        self.batchsize = 40
+        self.trainsteps = 8356 // self.batchsize
+        self.valsteps = 1044 // self.batchsize
 
         if user_dct:
             for k,v in user_dct.items():
