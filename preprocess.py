@@ -38,23 +38,27 @@ class cocoParser:
         self.bbxs = [dct.get('bbox') for dct in coco_labels['annotations']]
         self.names_ids = [(dct['id'], dct['file_name']) for dct in coco_labels['images']]
 
+    @staticmethod   
+    def __formatsegs (lst):
+        segs = [np.array(seg, dtype= np.int32) for seg in lst]
+        segs = [seg.reshape(-1,2) for seg in segs]
+        return segs
+
+    @staticmethod   
+    def __createmask (segs, shape):
+        canvas = np.zeros(shape)
+        mask = cv.fillPoly(canvas, pts = segs, color = (255, 255, 255))
+        return mask
+
+    @staticmethod   
+    def __create_border (mask, thickness):
+        image = np.copy(mask)
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (thickness, thickness))
+        image = cv.erode(image, kernel)
+        border = mask - image
+        return border
     
     def postive_data(self):
-      
-        def __formatsegs (lst):
-            segs = [np.array(seg, dtype= np.int32) for seg in lst]
-            segs = [seg.reshape(-1,2) for seg in segs]
-            return segs
-
-        def __createmask (segs, shape):
-            canvas = np.zeros(shape)
-            mask = cv.fillPoly(canvas, pts = segs, color = (255, 255, 255))
-            return mask
-
-        def __create_border (segs, shape, thickness):
-            canvas = np.zeros(shape, dtype= np.float32)
-            border = cv.polylines(canvas, segs, True, (255,255,255) , thickness)
-            return border
 
         # retrieve the unique image names and ids with a valid annotation poly in the cocolabels file.
         ids_, names = zip(*self.names_ids)
@@ -76,10 +80,9 @@ class cocoParser:
 
         # format the polygon arrays, create borders and masks
         shape = (256,256)
-        pos_data['seg'] = pos_data['seg'].apply(__formatsegs)
-        pos_data['mask'] = pos_data['seg'].apply(lambda x: __createmask(x, shape ) )
-        pos_data['mask'] = pos_data['seg'].apply(lambda x: __createmask(x, shape ) )
-        pos_data['border'] = pos_data['seg'].apply(lambda x: __create_border(x, shape, thickness = 4))
+        pos_data['seg'] = pos_data['seg'].apply(self.__formatsegs)
+        pos_data['mask'] = pos_data['seg'].apply(lambda x: self.__createmask(x, shape ) )
+        pos_data['border'] = pos_data['mask'].apply(lambda x: self.__create_border(x, thickness = 15))
         
         return pos_data
 
