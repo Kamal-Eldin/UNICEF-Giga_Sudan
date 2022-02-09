@@ -7,6 +7,7 @@ import cv2 as cv
 from pathlib import Path
 import matplotlib.pyplot as plt
 from keras_preprocessing.image import ImageDataGenerator
+from sklearn.model_selection import train_test_split
 
 
 
@@ -94,9 +95,10 @@ class buildSplits:
     returns a dataframe with cols : [index, segmentation coords, mask label array, border label array]
     '''
 
-    def __init__(self, postive_df, split_imgpath) -> None:
+    def __init__(self, postive_df, split_imgpath, seed = 32) -> None:
         self.postive_df = postive_df
         self.split_imgpath = split_imgpath
+        self.seed = seed
 
     def get_split_df(self, split = 'train'):
         split_df = pd.DataFrame (os.listdir(self.split_imgpath + f'{split}/'), columns = ['name'])
@@ -114,6 +116,30 @@ class buildSplits:
 
         return split_df
 
+    @staticmethod
+    def compose_arrays(signal):
+        masks = np.ndarray(shape = (len(signal), 256, 256, 1), dtype= np.float32)
+        
+        for indx in range(len(signal)):
+            mask = signal.loc[indx]
+            mask  = mask.reshape((256, 256, 1))
+            masks[indx] = mask 
+        return masks
+
+    def sklearn_splits(self):
+        names = self.postive_df[['name']]
+        signal = self.postive_df[['mask', 'border']]
+
+        xtrain, xtest, ytrain, ytest = train_test_split(names, signal , test_size=.2, random_state= self.seed )
+        xtrain, xval, ytrain, yval = train_test_split(xtrain, ytrain, test_size=.2, random_state= self.seed )
+
+        splits = [xtrain, ytrain, xval, yval, xtest, ytest]
+        splits = [split.reset_index(inplace= False, drop= True) for split in splits]
+        train_df = pd.concat([splits[0], splits[1]], axis= 1)  # xtrain, ytrain
+        val_df = pd.concat([splits[2], splits[3]], axis= 1)    # xval, yval
+        test_df = pd.concat([splits[4], splits[5]], axis= 1)   # xtest, ytest
+
+        return train_df, val_df, test_df
 class augmentation:
 
     # kwargs = {'seed' : 32,
