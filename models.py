@@ -93,7 +93,7 @@ class modelBuilder:
 
 class fitEval(modelBuilder):
 
-    def __init__(self, simple = True, log_path = '', checkpnt_path = '', lr = 0.001, input_shape = (256, 256, 3)) -> None:
+    def __init__(self, simple = False, log_path = '', checkpnt_path = '', lr = 0.001, input_shape = (256, 256, 3)) -> None:
         super().__init__(input_shape)
 
         if simple:
@@ -120,12 +120,14 @@ class fitEval(modelBuilder):
         
        
 
-    def fit(self, train_gen, val_gen, round, user_dct = None): 
+    def fit(self, train_gen, val_gen, round, length = (3340, 836, 1044), user_dct = None): 
+        len_train, len_val, len_test = length
         self.round = round
         self.epochs = 100
         self.batchsize = 40
-        self.trainsteps = 8356 // self.batchsize
-        self.valsteps = 1044 // self.batchsize
+        self.trainsteps = len_train // self.batchsize
+        self.valsteps = len_val // self.batchsize
+        self.teststeps = len_test
 
         if user_dct:
             for k,v in user_dct.items():
@@ -151,8 +153,12 @@ class fitEval(modelBuilder):
 
         return results
 
+    
+    def evaluate(self, test_datagen):
+        test_scores = self.model.evaluate(test_datagen, batch_size= 1 , steps= self.teststeps,  return_dict= True)
+        return test_scores
 
-    def evaluate(self, test_gen, len_xtest):
+    def prec_recall(self, test_gen, len_test = 1044):
         iouthresh_steps =[i for i in np.arange (0.1,1,.05)]
         p_curve = []
         r_curve = []
@@ -160,7 +166,7 @@ class fitEval(modelBuilder):
         for step in iouthresh_steps:
             p_scores = []
             r_scores = []
-            for i in range (len_xtest):
+            for i in range (len_test):
                 xt , [ymask, yborder] = next(test_gen)
                 ypred = self.model.predict(xt)
                 ypred = ypred[0] if type(ypred) is list else ypred
@@ -183,6 +189,7 @@ class fitEval(modelBuilder):
         return p_curve, r_curve
 
     pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
+
 
     @staticmethod
     def imglabel_overlay(ximg, mask, border, test = False):
