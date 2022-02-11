@@ -120,7 +120,7 @@ class fitEval(modelBuilder):
         
        
 
-    def fit(self, train_gen, val_gen, round, length = (3340, 836, 1044), user_dct = None): 
+    def fit(self, train_gen, val_gen, round, length = (3340, 836, 2031 ), user_dct = None): 
         len_train, len_val, len_test = length
         self.round = round
         self.epochs = 100
@@ -153,12 +153,13 @@ class fitEval(modelBuilder):
 
         return results
 
-    
-    def evaluate(self, test_datagen):
-        test_scores = self.model.evaluate(test_datagen, batch_size= 1 , steps= self.teststeps,  return_dict= True)
+    pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
+
+    def evaluate(self, test_gen):
+        test_scores = self.model.evaluate(test_gen, batch_size= 1 , steps= self.teststeps,  return_dict= True)
         return test_scores
 
-    def prec_recall(self, test_gen, len_test = 1044):
+    def prec_recall(self, test_gen):
         iouthresh_steps =[i for i in np.arange (0.1,1,.05)]
         p_curve = []
         r_curve = []
@@ -166,7 +167,7 @@ class fitEval(modelBuilder):
         for step in iouthresh_steps:
             p_scores = []
             r_scores = []
-            for i in range (len_test):
+            for i in range (self.teststeps):
                 xt , [ymask, yborder] = next(test_gen)
                 ypred = self.model.predict(xt)
                 ypred = ypred[0] if type(ypred) is list else ypred
@@ -187,8 +188,6 @@ class fitEval(modelBuilder):
         plt.show()
 
         return p_curve, r_curve
-
-    pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
 
 
     @staticmethod

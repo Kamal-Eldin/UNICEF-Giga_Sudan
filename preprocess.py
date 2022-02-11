@@ -2,6 +2,7 @@ import json
 import numpy as np
 import pandas as pd
 import os
+import re
 from collections import defaultdict
 import cv2 as cv
 from pathlib import Path
@@ -95,10 +96,59 @@ class buildSplits:
     returns a dataframe with cols : [index, segmentation coords, mask label array, border label array]
     '''
 
-    def __init__(self, postive_df, split_imgpath, seed = 32) -> None:
+    def __init__(self, postive_df, test_imgpath, seed = 32) -> None:
         self.postive_df = postive_df
-        self.split_imgpath = split_imgpath
+        self.test_imgpath = test_imgpath
         self.seed = seed
+
+    @staticmethod
+    def compose_arrays(signal):
+        masks = np.ndarray(shape = (len(signal), 256, 256, 1), dtype= np.float32)
+        
+        for indx in range(len(signal)):
+            mask = signal.loc[indx]
+            mask  = mask.reshape((256, 256, 1))
+            masks[indx] = mask 
+        return masks
+
+    def sklearn_splits(self, neg_test = True):
+        names = self.postive_df[['name']]
+        signal = self.postive_df[['mask', 'border']]
+
+        xtrain, xtest, ytrain, ytest = train_test_split(names, signal , test_size=.2, random_state= self.seed )
+        xtrain, xval, ytrain, yval = train_test_split(xtrain, ytrain, test_size=.2, random_state= self.seed )
+
+        splits = [xtrain, ytrain, xval, yval, xtest, ytest]
+        splits = [split.reset_index(inplace= False, drop= True) for split in splits]
+        train_df = pd.concat([splits[0], splits[1]], axis= 1)  # xtrain, ytrain
+        val_df = pd.concat([splits[2], splits[3]], axis= 1)    # xval, yval
+        test_df = pd.concat([splits[4], splits[5]], axis= 1)   # xtest, ytest
+
+        if neg_test:
+            negtest_df = self.neg_test_df(test_df)
+            test_df = negtest_df
+
+        return train_df, val_df, test_df
+    
+    @staticmethod
+    def neg_test_df(self, test_df, neg_lenght = 1000):
+        pattern = r'\d+_\w.png'
+        nonschool_names = [f for f in os.listdir(self.test_imgpath) if re.search(pattern, f)]
+        split_df = pd.DataFrame (nonschool_names, columns = ['name'])
+        split_df = pd.merge(split_df.iloc[:neg_lenght], test_df, on= 'name', how= 'outer')
+
+        blank_seg = np.zeros_like(self.postive_df.loc[1, 'seg'])
+        blank_canvas = np.zeros_like(self.postive_df.loc[1, 'mask'])
+
+        split_df = split_df.replace(np.nan, 0)
+        #split_df['seg'] = split_df['seg'].map(lambda x: blank_seg if type(x) is int  else x )
+        split_df['mask'] = split_df['mask'].map(lambda x: blank_canvas if type(x) is int  else x )
+        split_df['border'] = split_df['border'].map(lambda x: blank_canvas if type(x) is int  else x )
+
+        split_df = split_df.sample(frac = 1, random_state = self.seed) # shuffle the dataframe rows inplace 
+        split_df.reset_index(inplace= True, drop= True)
+
+        return split_df   
 
     def get_split_df(self, split = 'train'):
         split_df = pd.DataFrame (os.listdir(self.split_imgpath + f'{split}/'), columns = ['name'])
@@ -116,30 +166,6 @@ class buildSplits:
 
         return split_df
 
-    @staticmethod
-    def compose_arrays(signal):
-        masks = np.ndarray(shape = (len(signal), 256, 256, 1), dtype= np.float32)
-        
-        for indx in range(len(signal)):
-            mask = signal.loc[indx]
-            mask  = mask.reshape((256, 256, 1))
-            masks[indx] = mask 
-        return masks
-
-    def sklearn_splits(self):
-        names = self.postive_df[['name']]
-        signal = self.postive_df[['mask', 'border']]
-
-        xtrain, xtest, ytrain, ytest = train_test_split(names, signal , test_size=.2, random_state= self.seed )
-        xtrain, xval, ytrain, yval = train_test_split(xtrain, ytrain, test_size=.2, random_state= self.seed )
-
-        splits = [xtrain, ytrain, xval, yval, xtest, ytest]
-        splits = [split.reset_index(inplace= False, drop= True) for split in splits]
-        train_df = pd.concat([splits[0], splits[1]], axis= 1)  # xtrain, ytrain
-        val_df = pd.concat([splits[2], splits[3]], axis= 1)    # xval, yval
-        test_df = pd.concat([splits[4], splits[5]], axis= 1)   # xtest, ytest
-
-        return train_df, val_df, test_df
 class augmentation:
 
     # kwargs = {'seed' : 32,
@@ -199,8 +225,14 @@ class augmentation:
             labels[indx] = y 
         return labels
 
-    
+    @staticmethod
+    def filter_df (split_df, imgpath ):
+        fltr = split_df['name'].map(lambda x: x in os.listdir(imgpath))
+        return split_df[fltr]
+
     def get_splitgen (self, split_df, imgpath, test = False):
+        split_df = self.filter_df (split_df, imgpath)
+
         gen = self.testgen if test else self.gen
 
         masks_arrs = self.__get_targetarrays(split_df)
@@ -214,7 +246,6 @@ class augmentation:
         split_gen = self.__data_gen(x_flow, y_maskflow, y_borderflow)
 
         return split_gen
-
 
 
 
