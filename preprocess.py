@@ -130,7 +130,6 @@ class buildSplits:
 
         return train_df, val_df, test_df
     
-    @staticmethod
     def neg_test_df(self, test_df, neg_lenght = 1000):
         pattern = r'\d+_\w.png'
         nonschool_names = [f for f in os.listdir(self.test_imgpath) if re.search(pattern, f)]
@@ -228,7 +227,8 @@ class augmentation:
     @staticmethod
     def filter_df (split_df, imgpath ):
         fltr = split_df['name'].map(lambda x: x in os.listdir(imgpath))
-        return split_df[fltr]
+        split_df = split_df[fltr].reset_index(drop= True)
+        return split_df
 
     def get_splitgen (self, split_df, imgpath, test = False):
         split_df = self.filter_df (split_df, imgpath)
