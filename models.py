@@ -15,7 +15,6 @@ from skimage import img_as_ubyte
 import cv2 as cv
 
 
-
 class modelBuilder:
 
     
@@ -120,8 +119,9 @@ class fitEval(modelBuilder):
         
        
 
-    def fit(self, train_gen, val_gen, round, length = (3340, 836, 2031 ), user_dct = None): 
+    def fit(self, train_gen, val_gen, round, length = (3342, 836, 2045 ), user_dct = None): 
         len_train, len_val, len_test = length
+        self.len_test = len_test
         self.round = round
         self.epochs = 100
         self.batchsize = 40
@@ -159,7 +159,12 @@ class fitEval(modelBuilder):
         test_scores = self.model.evaluate(test_gen, batch_size= 1 , steps= self.teststeps,  return_dict= True)
         return test_scores
 
-    def prec_recall(self, test_gen):
+    def load_model(self, weightpath):
+        model = self.model
+        model.load_weights(weightpath)
+        self.model = model
+
+    def prec_recall(self, test_gen, neg_data = False):
         iouthresh_steps =[i for i in np.arange (0.1,1,.05)]
         p_curve = []
         r_curve = []
@@ -172,22 +177,42 @@ class fitEval(modelBuilder):
                 ypred = self.model.predict(xt)
                 ypred = ypred[0] if type(ypred) is list else ypred
                 p_scores.append (precsn(ymask, ypred, step))
-                r_scores.append (recall(ymask, ypred, step))
+                r_scores.append (recall(ymask, ypred, step)) if neg_data else r_scores.append(0) 
                 
             p_curve.append(np.mean(p_scores))
             r_curve.append(np.mean(r_scores))
 
-        plt.figure(figsize = (12,8))
-        plt.plot(iouthresh_steps, p_curve)
-        plt.plot(iouthresh_steps, r_curve)
+        self.plot_presRecall(iouthresh_steps, p_curve, r_curve)
+
+        return p_curve, r_curve
+
+    @staticmethod
+    def plot_presRecall(steps, p_curve, r_curve):
+
+        x = [np.round(i, 2) for i in np.arange (0.1, 1, .1)]
+        width = 0.05
+
+        plt.figure(figsize = (20,8))
+        plt.subplot(121)
+        plt.bar(x, width= width, height= p_curve[::2])
+        plt.xticks(x, x)
+        plt.yticks(np.arange(0, 1.05, 0.05))
         plt.xlabel('IoU Threshold', fontsize = 14)
-        plt.xticks(iouthresh_steps, rotation = 20)
+        plt.ylabel ('Average Precision', fontsize = 14 )
+        plt.suptitle('Evaluation', y = 1.02, fontsize = 18)
+
+        plt.subplot(122)
+        plt.plot(steps, p_curve)
+        if sum(r_curve) > 0 : plt.plot(steps, r_curve)
+        plt.xlabel('IoU Threshold', fontsize = 14)
+        plt.xticks(steps, rotation = 20)
         plt.yticks(np.arange(0,1.05, 0.05))
         plt.ylabel('Precision | Recall', fontsize = 14)
         plt.legend(['Precision', 'Recall'], loc='best')
+
+        plt.tight_layout()
         plt.show()
 
-        return p_curve, r_curve
 
 
     @staticmethod
@@ -218,4 +243,24 @@ class fitEval(modelBuilder):
         out = cv.addWeighted(blueMask, .5, image, 1, 0, image)
         out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
         return out
+
+    def inspect_preds(self, testgen, length):
+        ovs = []
+        for i in range(length):
+            xt , [ymask, yborder] = next(testgen)
+            p_mask, p_border = self.model.predict(xt)
+            ov = self.imglabel_overlay(xt, p_mask, p_border, test = True )
+            ovs.append(ov)
+
+        return ovs
+
+class loadModel(fitEval):
+
+    def __init__(self, simple=False, lr=0.001, input_shape=(256, 256, 3)) -> None:
+        super().__init__(simple, lr, input_shape)
+
+ 
+
+        
+
 
