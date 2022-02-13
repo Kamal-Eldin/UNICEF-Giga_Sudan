@@ -280,7 +280,7 @@ def label_overlay(ximg, mask, border, pred = False):
 
 
 
-def single_overlay(ximg, mask, border):
+def single_overlay(ximg, mask):
     
     image = np.copy(ximg)
     image /=  np.max(image)
@@ -288,17 +288,12 @@ def single_overlay(ximg, mask, border):
     image = image.astype(dtype = np.uint8).squeeze()
     mask *= 255
     mask = mask.astype(dtype = np.uint8).squeeze()
-    border *= 255
-    border = border.astype(dtype = np.uint8).squeeze()
 
     
     red_canvas = np.full(image.shape, (255, 0, 0), image.dtype)
-    green_canvas = np.full(image.shape, (0, 255, 0), image.dtype)
 
     redMask = cv.bitwise_and(red_canvas, red_canvas, mask=mask)
-    greenborder = cv.bitwise_and(green_canvas, green_canvas, mask=border)
     out = cv.addWeighted(redMask, .5, image, 1, 0, image)
-    out = cv.addWeighted(greenborder, .5, out, 1, 0, image)
     return out
 
 

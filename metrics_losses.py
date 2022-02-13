@@ -43,47 +43,53 @@ def dice_xent(true, pred):
 
 ###################
 
-def conf_matrix (true, pred, iou_threshold = 0.5):
-  iou_score = iou(true, pred)
-  TP, FP, FN = 0, 0, 0
+class metrics:
 
-  pos_class = 1. if k.sum (true) > 0  else 0.
+  def __init__(self, iou_threshold = 0.5) -> None:
+      self.iou_threshold = iou_threshold
 
-  yt, yp = cast_flat(true, pred)
+  def conf_matrix (self, true, pred):
+    iou_score = iou(true, pred)
+    TP, FP, FN = 0, 0, 0
 
-  if k.sum(true) > 0 and k.sum(pred) > 0:
-    if iou_score >= iou_threshold:
-      TP += 1
-    else:
+    pos_class = 1. if k.sum (true) > 0  else 0.
+
+    yt, yp = cast_flat(true, pred)
+
+    if k.sum(true) > 0 and k.sum(pred) > 0:
+      if iou_score >= self.iou_threshold:
+        TP += 1
+      else:
+        FP += 1
+
+    elif k.sum(true) > 0 and k.sum(pred) <= 0:
+      FN += 1
+
+    elif k.sum(true) <= 0 and k.sum(pred) > 0:
       FP += 1
 
-  elif k.sum(true) > 0 and k.sum(pred) <= 0:
-    FN += 1
+    TP, FP, pos_class = (k.cast(count, 'float32') for count in (TP, FP, pos_class) )
 
-  elif k.sum(true) <= 0 and k.sum(pred) > 0:
-    FP += 1
+    return TP, FP, pos_class
 
-  TP, FP, pos_class = (k.cast(count, 'float32') for count in (TP, FP, pos_class) )
-  return TP, FP, pos_class
+  def precsn(self, true, pred):
+    eps = k.epsilon()
+    TP, FP, pos_class = self.conf_matrix (true, pred)
+    return (TP + eps ) / (TP + FP + eps)
 
-#####################################################
-
-def precsn(true, pred, iou_threshold = 0.5):
-  eps = k.epsilon()
-  TP, FP, pos_class = conf_matrix (true, pred, iou_threshold)
-  return (TP + eps ) / (TP + FP + eps)
-
-def recall(true, pred, iou_threshold = 0.5):
-  eps = k.epsilon()
-  TP, FP, pos_class = conf_matrix (true, pred, iou_threshold)
-  return (TP + eps) / (pos_class + eps )
+  def recall(self, true, pred):
+    eps = k.epsilon()
+    TP, FP, pos_class = self.conf_matrix (true, pred)
+    return (TP + eps) / (pos_class + eps )
 
 
-def mAP (true, pred):
-  prcsn_scores = []
-  for iou_thresold in np.arange(.5,.95,0.05):
-    prcsn_scores.append(precsn(true, pred, iou_thresold))
+  def mAP (self,true, pred):
+    prcsn_scores = []
+    for iou_thresold in np.arange(.5,.95,0.05):
+      self.iou_threshold = iou_thresold
+      prcsn_scores.append(self.precsn(true, pred))
 
-  mAP = k.sum(prcsn_scores)/len(prcsn_scores)
-  return mAP
+    mAP = k.sum(prcsn_scores)/len(prcsn_scores)
+    self.iou_threshold = 0.5
+    return mAP
 

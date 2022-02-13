@@ -6,14 +6,15 @@ from tensorflow.keras.losses import BinaryCrossentropy as BCE
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, TensorBoard, ModelCheckpoint
 from  tensorflow.keras.optimizers import Adam
 import tensorflow.keras.backend as K
-from metrics_losses import dice_xent, iou, precsn, recall, mAP
+from metrics_losses import dice_xent, iou
 import h5py
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
 import cv2 as cv
-
+from metrics_losses import metrics 
+from preprocess import single_overlay
 
 class modelBuilder:
 
@@ -111,16 +112,17 @@ class fitEval(modelBuilder):
                                                                           
         self.log_path = log_path
         self.checkpnt_path = checkpnt_path
-        
+
+        metrcs = metrics()
         self.model.compile(
         optimizer= self.optimizer, 
         loss= self.loss,
         loss_weights = self.loss_weights,
-        metrics= [iou, mAP, precsn, recall])
+        metrics= [iou, metrcs.mAP, metrcs.precsn, metrcs.recall])
         
        
 
-    def fit(self, train_gen, val_gen, round, length = (3342, 836, 2045 ), user_dct = None): 
+    def fit(self, train_gen, val_gen, round, length = (3342, 836, 1045 ), user_dct = None): 
         len_train, len_val, len_test = length
         self.len_test = len_test
         self.round = round
@@ -157,7 +159,7 @@ class fitEval(modelBuilder):
     pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
 
     def evaluate(self, test_gen):
-        test_scores = self.model.evaluate(test_gen, batch_size= 1 , steps= self.teststeps,  return_dict= True)
+        test_scores = self.model.evaluate(test_gen, batch_size= 96 , steps= self.len_test // 96,  return_dict= True)
         return test_scores
 
     def load_model(self, weightpath):
@@ -171,17 +173,19 @@ class fitEval(modelBuilder):
         r_curve = []
 
         for step in iouthresh_steps:
-            p_scores = []
-            r_scores = []
-            for i in range (self.teststeps):
-                xt , [ymask, yborder] = next(test_gen)
-                ypred = self.model.predict(xt)
-                ypred = ypred[0] if type(ypred) is list else ypred
-                p_scores.append (precsn(ymask, ypred, step))
-                r_scores.append (recall(ymask, ypred, step)) if neg_data else r_scores.append(0) 
-                
-            p_curve.append(np.mean(p_scores))
-            r_curve.append(np.mean(r_scores))
+            met = metrics(step)
+            metrics_list = [iou, met.mAP, met.precsn, met.recall]
+            self.model.compile(
+                        optimizer= self.optimizer, 
+                        loss= self.loss,
+                        loss_weights = self.loss_weights,
+                        metrics= metrics_list)
+            test_scores = self.model.evaluate(test_gen, batch_size= 96 , steps= self.len_test // 96,  return_dict= True)
+            precision =  test_scores['precsn']
+            recall =  test_scores['recall']
+            p_curve.append (precision)
+            r_curve.append (recall) if neg_data else r_curve.append(0) 
+        
 
         self.plot_presRecall(iouthresh_steps, p_curve, r_curve)
 
@@ -248,9 +252,16 @@ class fitEval(modelBuilder):
     def inspect_preds(self, testgen, length):
         ovs = []
         for i in range(length):
-            xt , [ymask, yborder] = next(testgen)
-            p_mask, p_border = self.model.predict(xt)
-            ov = self.imglabel_overlay(xt, p_mask, p_border, test = True )
+            #xt , [ymask, yborder] = next(testgen)
+            xt , label = next(testgen)
+            # p_mask, p_border = self.model.predict(xt)
+            p_label = self.model.predict(xt)
+            if len(p_label) == 2:
+                p_mask, p_border = p_label
+                ov = self.imglabel_overlay(xt, p_mask, p_border, test = True )
+            else:
+                ov = single_overlay(xt, p_label)
+                
             ovs.append(ov)
 
         return ovs
