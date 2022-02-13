@@ -104,7 +104,8 @@ class fitEval(modelBuilder):
             self.loss = { "U_MASKS": dice_xent, "U_BORDERS": dice_xent }
             self.loss_weights = {"U_MASKS": 1.0, "U_BORDERS": 1.0}
 
-        self.optimizer = Adam(learning_rate= lr)
+        self.lr = lr
+        self.optimizer = Adam(learning_rate= self.lr)
         self.summary = self.model.summary
         self.plot = plot_model(self.model, show_shapes=True)
                                                                           
