@@ -15,9 +15,10 @@ from skimage import img_as_ubyte
 import cv2 as cv
 from metrics_losses import metrics 
 from preprocess import single_overlay
+from skimage.measure import regionprops, label
+from skimage.morphology import remove_small_objects
 
 class modelBuilder:
-
     
     def __init__(self, input_shape = (256, 256, 3)) -> None:
         self.input_shape = input_shape
@@ -142,7 +143,8 @@ class fitEval(modelBuilder):
         self.earlyStop = EarlyStopping(monitor='val_loss', min_delta= 0.001, patience= 8, verbose= 1, restore_best_weights= True)
         self.tensorboard = TensorBoard(log_dir= self.log_path)
         self.csvlogger = CSVLogger(self.log_path + f'training_{self.round}.log')
-        self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{self.round}_' +"mchp_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )  
+        # self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{self.round}_' +"mchp_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )  
+        self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{self.round}_' + "best_model.hdf5", monitor = 'val_iou', mode = 'max', verbose= 1, save_best_only= True, save_weights_only= True )  
        
         callbacks = [self.csvlogger, self.checkpointer, self.tensorboard]
 
@@ -221,7 +223,7 @@ class fitEval(modelBuilder):
 
 
     @staticmethod
-    def imglabel_overlay(ximg, mask, border, test = False):
+    def label_overlay(ximg, mask, border, test = False):
         
         pixel_clip = np.vectorize(lambda pixel: 0 if pixel < 0.5 else 1)
 
@@ -249,21 +251,48 @@ class fitEval(modelBuilder):
         out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
         return out
 
+    def make_pred (self, xt):
+
+        p_label = self.model.predict(xt)
+
+        if len(p_label) == 2:
+            p_mask, p_border = p_label  
+        else:
+            p_mask, p_border  = p_label, np.zeros_like(p_label)
+
+        return p_mask, p_border
+
+    @staticmethod
+    def process_pred(p_mask):
+        pixel_clip = np.vectorize(lambda pixel: 0 if pixel < 0.5 else 1)
+        p_mask = pixel_clip(p_mask.squeeze())
+        labels = label(p_mask, background = 0)
+        labels = remove_small_objects(labels, min_size = 500)
+        props = [p for p in regionprops(labels)]
+        areas = [p.area for p in props] 
+
+        start = (0, 0)
+        end = (0, 0)
+        if len(areas) > 0:
+            max_area = np.argmax(areas)
+            candidate = props[max_area]
+            minr, minc, maxr, maxc = candidate.bbox
+            start = (minc, minr)
+            end = (maxc, maxr)
+        
+        return start, end, labels
+
     def inspect_preds(self, testgen, length):
         ovs = []
         for i in range(length):
-            #xt , [ymask, yborder] = next(testgen)
-            xt , label = next(testgen)
-            # p_mask, p_border = self.model.predict(xt)
-            p_label = self.model.predict(xt)
-            if len(p_label) == 2:
-                p_mask, p_border = p_label
-                ov = self.imglabel_overlay(xt, p_mask, p_border, test = True )
-            else:
-                ov = single_overlay(xt, p_label)
-                
-            ovs.append(ov)
+            X ,_ = next(testgen)
+            p_mask, p_border = self.make_pred(X)
+            start, end, labels = self.process_pred(p_mask)
+            
+            ov = self.label_overlay(X, labels, p_border, test = True)
+            ov = cv.rectangle(ov, start, end, color = (36,255,12 ), thickness = 2)
 
+            ovs.append(ov)
         return ovs
 
 class loadModel(fitEval):

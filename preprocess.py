@@ -278,6 +278,15 @@ def label_overlay(ximg, mask, border, pred = False):
     out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
     return out
 
+def inspect_trues(test_gen, length) :
+    ovts = []
+    for i in range(length):
+        x, [ymask, yborder] = next(test_gen)
+        ov = label_overlay(x, ymask, yborder)
+        ovts.append(ov)
+
+    return ovts
+
 
 
 def single_overlay(ximg, mask):
@@ -290,7 +299,7 @@ def single_overlay(ximg, mask):
     mask = mask.astype(dtype = np.uint8).squeeze()
 
     
-    red_canvas = np.full(image.shape, (255, 0, 0), image.dtype)
+    red_canvas = np.full(image.shape, (0, 0, 255), image.dtype)
 
     redMask = cv.bitwise_and(red_canvas, red_canvas, mask=mask)
     out = cv.addWeighted(redMask, .5, image, 1, 0, image)
