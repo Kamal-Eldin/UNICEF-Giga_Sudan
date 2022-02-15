@@ -267,32 +267,35 @@ class fitEval(modelBuilder):
         pixel_clip = np.vectorize(lambda pixel: 0 if pixel < 0.5 else 1)
         p_mask = pixel_clip(p_mask.squeeze())
         labels = label(p_mask, background = 0)
-        labels = remove_small_objects(labels, min_size = 500)
+        labels = remove_small_objects(labels, min_size = 1000)
         props = [p for p in regionprops(labels)]
         areas = [p.area for p in props] 
 
-        start = (0, 0)
-        end = (0, 0)
+        bboxs = []
         if len(areas) > 0:
-            max_area = np.argmax(areas)
-            candidate = props[max_area]
-            minr, minc, maxr, maxc = candidate.bbox
-            start = (minc, minr)
-            end = (maxc, maxr)
+            sorted_inds = sorted (np.argsort(areas), reverse = 1)
+            for ind in sorted_inds:
+                max_area = np.argmax(areas)
+                candidate = props[ind]
+                bbox_coords = candidate.bbox
+                bboxs.append(bbox_coords)
         
-        return start, end, labels
+        return bboxs, labels
 
     def inspect_preds(self, testgen, length):
         ovs = []
         for i in range(length):
             X ,_ = next(testgen)
             p_mask, p_border = self.make_pred(X)
-            start, end, labels = self.process_pred(p_mask)
-            
+            bboxs, labels = self.process_pred(p_mask)
             ov = self.label_overlay(X, labels, p_border, test = True)
-            ov = cv.rectangle(ov, start, end, color = (36,255,12 ), thickness = 2)
 
-            ovs.append(ov)
+            if len(bboxs) > 0:
+                for bbx in bboxs:
+                    minr, minc, maxr, maxc = bbx
+                    start, end = (minc, minr) , (maxc, maxr)
+                    ov = cv.rectangle(ov, start, end, color = (36,255,12 ), thickness = 2)
+                ovs.append(ov)
         return ovs
 
 class loadModel(fitEval):
