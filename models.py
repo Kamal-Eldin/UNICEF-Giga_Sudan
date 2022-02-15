@@ -3,7 +3,7 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.keras.layers import Activation, Concatenate, Conv2D, Conv2DTranspose, MaxPool2D, Input, BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import BinaryCrossentropy as BCE
-from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, TensorBoard, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, TensorBoard, ModelCheckpoint, LearningRateScheduler
 from  tensorflow.keras.optimizers import Adam
 import tensorflow.keras.backend as K
 from metrics_losses import dice_xent, iou
@@ -101,16 +101,20 @@ class fitEval(modelBuilder):
             self.model = self.simple_unet()
             self.loss = dice_xent 
             self.loss_weights = None
+            self.monitor = 'iou'
         else:
             self.model = self.compound_unet()
             self.loss = { "U_MASKS": dice_xent, "U_BORDERS": dice_xent }
             self.loss_weights = {"U_MASKS": 1.0, "U_BORDERS": 1.0}
+            self.monitor = 'U_MASKS_iou'
 
         self.lr = lr
+        self.lr_downstep = 20
+        self.decay = 0.75
         self.optimizer = Adam(learning_rate= self.lr)
+
         self.summary = self.model.summary
-        self.plot = plot_model(self.model, show_shapes=True)
-                                                                          
+        self.plot = plot_model(self.model, show_shapes=True)                                                           
         self.log_path = log_path
         self.checkpnt_path = checkpnt_path
 
@@ -120,10 +124,13 @@ class fitEval(modelBuilder):
         loss= self.loss,
         loss_weights = self.loss_weights,
         metrics= [iou, metrcs.mAP, metrcs.precsn, metrcs.recall])
-        
-       
+     
 
-    def fit(self, train_gen, val_gen, round, length = (3342, 836, 1045 ), user_dct = None): 
+    def schedule(self, epoch):
+        return self.lr * (self.decay ** np.floor(epoch/self.lr_downstep))
+
+
+    def fit(self, train_gen, val_gen, round = 0, length = (3342, 836, 1045 ), user_dct = None): 
         len_train, len_val, len_test = length
         self.len_test = len_test
         self.round = round
@@ -140,13 +147,13 @@ class fitEval(modelBuilder):
                 else:
                     raise KeyError(k)
 
-        self.earlyStop = EarlyStopping(monitor='val_loss', min_delta= 0.001, patience= 8, verbose= 1, restore_best_weights= True)
+        self.earlyStop = EarlyStopping(monitor= self.monitor, min_delta= 0.001, patience= 10, verbose= 1, restore_best_weights= True)
         self.tensorboard = TensorBoard(log_dir= self.log_path)
         self.csvlogger = CSVLogger(self.log_path + f'training_{self.round}.log')
         # self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{self.round}_' +"mchp_{epoch:04d}.hdf5", verbose= 1, save_weights_only= True )  
-        self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{self.round}_' + "best_model.hdf5", monitor = 'val_iou', mode = 'max', verbose= 1, save_best_only= True, save_weights_only= True )  
-       
-        callbacks = [self.csvlogger, self.checkpointer, self.tensorboard]
+        self.checkpointer = ModelCheckpoint(self.checkpnt_path + f'{self.round}_' + "best_model.hdf5", monitor = self.monitor, mode = 'max', verbose= 1, save_best_only= True, save_weights_only= True )  
+        self.lr_sched = LearningRateScheduler (self.schedule, verbose= 1)
+        callbacks = [self.lr_sched, self.csvlogger, self.checkpointer, self.tensorboard]
 
         results = self.model.fit( x = train_gen, validation_data = val_gen,
                             verbose= 1, 
@@ -251,7 +258,7 @@ class fitEval(modelBuilder):
         out = cv.addWeighted(whiteborder, .5, out, 1, 0, out)
         return out
 
-    def make_pred (self, xt):
+    def make_pred(self, xt):
 
         p_label = self.model.predict(xt)
 
