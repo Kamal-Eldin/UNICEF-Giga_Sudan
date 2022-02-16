@@ -270,11 +270,11 @@ class fitEval(modelBuilder):
         return p_mask, p_border
 
     @staticmethod
-    def process_pred(p_mask):
+    def process_pred(p_mask, min_size = 1000):
         pixel_clip = np.vectorize(lambda pixel: 0 if pixel < 0.5 else 1)
         p_mask = pixel_clip(p_mask.squeeze())
         labels = label(p_mask, background = 0)
-        labels = remove_small_objects(labels, min_size = 1000)
+        labels = remove_small_objects(labels, min_size = min_size)
         props = [p for p in regionprops(labels)]
         areas = [p.area for p in props] 
 
@@ -294,8 +294,9 @@ class fitEval(modelBuilder):
         for i in range(length):
             X ,_ = next(testgen)
             p_mask, p_border = self.make_pred(X)
-            bboxs, labels = self.process_pred(p_mask)
-            ov = self.label_overlay(X, labels, p_border, test = True)
+            bboxs, labels = self.process_pred(p_mask, min_size = 1000)
+            _ , border_labels = self.process_pred(p_border, min_size = 200)
+            ov = self.label_overlay(X, labels, border_labels, test = True)
 
             if len(bboxs) > 0:
                 for bbx in bboxs:
