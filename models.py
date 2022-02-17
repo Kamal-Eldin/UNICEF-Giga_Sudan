@@ -171,7 +171,7 @@ class fitEval(modelBuilder):
         test_scores = self.model.evaluate(test_gen, batch_size= 96 , steps= self.len_test // 96,  return_dict= True)
         return test_scores
 
-    def load_model(self, weightpath):
+    def load_weights(self, weightpath):
         model = self.model
         model.load_weights(weightpath)
         self.model = model
@@ -308,10 +308,13 @@ class fitEval(modelBuilder):
 
 class loadModel(fitEval):
 
-    def __init__(self, simple=False, lr=0.001, input_shape=(256, 256, 3)) -> None:
-        super().__init__(simple, lr, input_shape)
-
- 
+    def __init__(self, simple=True, lr= 0.00001, input_shape=(256, 256, 3)) -> None:
+        super().__init__(simple,lr, input_shape)
+        self.weightpath = ''
+        
+    def load_model(self, weightpath):
+        self.weightpath = weightpath
+        return self.load_weights(self.weightpath)
 
         
 
