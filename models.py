@@ -6,14 +6,14 @@ from tensorflow.keras.losses import BinaryCrossentropy as BCE
 from tensorflow.keras.callbacks import EarlyStopping, CSVLogger, TensorBoard, ModelCheckpoint, LearningRateScheduler
 from  tensorflow.keras.optimizers import Adam
 import tensorflow.keras.backend as K
-from metrics_losses import dice_xent, iou
+from metrics_losses import metrics, dice_xent, iou
 import h5py
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
 import cv2 as cv
-from metrics_losses import metrics 
+
 from preprocess import single_overlay
 from skimage.measure import regionprops, label
 from skimage.morphology import remove_small_objects
@@ -167,8 +167,10 @@ class fitEval(modelBuilder):
 
     pix_sup= np.vectorize(lambda x: 0 if x < 0.5 else 1)
 
-    def evaluate(self, test_gen):
-        test_scores = self.model.evaluate(test_gen, batch_size= 96 , steps= self.len_test // 96,  return_dict= True)
+    def evaluate(self, test_gen, len_test = 1045, batch_size = 12):
+        self.len_test = len_test
+        self.batchsize = batch_size
+        test_scores = self.model.evaluate(test_gen, batch_size= self.batchsize  , steps= self.len_test // self.batchsize ,  return_dict= True)
         return test_scores
 
     def load_weights(self, weightpath):
@@ -176,25 +178,25 @@ class fitEval(modelBuilder):
         model.load_weights(weightpath)
         self.model = model
 
-    def prec_recall(self, test_gen, neg_data = False):
-        iouthresh_steps =[i for i in np.arange (0.1,1,.05)]
+    def prec_recall(self, test_gen, len_xtest = 1045, neg_data = False):
+        iouthresh_steps =[i for i in np.arange (0.1, 1,.05)]
         p_curve = []
         r_curve = []
 
         for step in iouthresh_steps:
-            met = metrics(step)
-            metrics_list = [iou, met.mAP, met.precsn, met.recall]
-            self.model.compile(
-                        optimizer= self.optimizer, 
-                        loss= self.loss,
-                        loss_weights = self.loss_weights,
-                        metrics= metrics_list)
-            test_scores = self.model.evaluate(test_gen, batch_size= 96 , steps= self.len_test // 96,  return_dict= True)
-            precision =  test_scores['precsn']
-            recall =  test_scores['recall']
-            p_curve.append (precision)
-            r_curve.append (recall) if neg_data else r_curve.append(0) 
-        
+            p_scores = []
+            r_scores = []
+            for i in range (len_xtest):
+                xt , [ymask, yborder] = next(test_gen)
+                yprd_msk = self.model.predict(xt)
+                met = metrics(iou_threshold = step)
+                pr = met.precsn(ymask, yprd_msk).numpy()
+                rc = met.recall(ymask, yprd_msk).numpy() if neg_data else 0
+                p_scores.append (pr)
+                r_scores.append (rc)
+
+            p_curve.append(np.mean(p_scores))
+            r_curve.append(np.mean(r_scores))       
 
         self.plot_presRecall(iouthresh_steps, p_curve, r_curve)
 
