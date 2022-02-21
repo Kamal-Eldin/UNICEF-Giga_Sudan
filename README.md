@@ -2,16 +2,14 @@
 ## INTRODUCTION
 This repo shows my contribution as an ML engineer to the UNICEF-Giga project organized by [Omdena](https://omdena.com/projects/omdenalorexgiga/) to help connect schools in developing nations worldwide to the internet. For a more detailed walkthrough to the technical solution please click the colab icon below:
 
-</br>
 <p align="center">
 <a href="https://colab.research.google.com/drive/1mCARL1iIuy3YJaQCU6-cFOR_G9fwPQ5e?usp=sharing" target="_blank">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 </p>
-<center>
 or download the notebook in this repo at </br>
  <a href="./Walkthrough_Model_Development.ipynb" target="_blank">Walkthrough_Model_Development.ipynb</a> 
-</center>
+</br></br>
 
 ### Giga:
  The <a href="https://www.unicef.org/innovation/giga" target="_blank">UNICEF Office of Innovation</a> describes Giga as:
