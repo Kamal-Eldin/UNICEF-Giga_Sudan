@@ -1,6 +1,13 @@
 # UNICEF-Giga_Sudan
 ## INTRODUCTION
-This repo shows my contribution as an ML engineer to the UNICEF-Giga project organized by [Omdena](https://omdena.com/projects/omdenalorexgiga/) to help connect schools in developing nations worldwide to the internet. For a more detailed walkthrough to the technical solution please refer to <a href="./Walkthrough_Model_Development.ipynb" target="_blank">Walkthrough_Model_Development.ipynb</a>
+This repo shows my contribution as an ML engineer to the UNICEF-Giga project organized by [Omdena](https://omdena.com/projects/omdenalorexgiga/) to help connect schools in developing nations worldwide to the internet. For a more detailed walkthrough to the technical solution please click the colab icon below:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](./Walkthrough_Model_Development.ipynb)
+
+
+ <a href="./Walkthrough_Model_Development.ipynb" target="_blank">Walkthrough_Model_Development.ipynb</a> 
+
+
 
 > Giga, an initiative launched by UNICEF and ITU in September 2019 to connect every school to the Internet and every young person to information, opportunity and choice, is supporting the response to COVID-19, as well as looking at how connectivity can create stronger infrastructures of hope and opportunity in the "time after COVID."
 <a href="https://www.unicef.org/innovation/giga" target="_blank">
