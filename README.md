@@ -1,6 +1,6 @@
 # UNICEF-Giga_Sudan
 ## INTRODUCTION
-This repo shows my contribution as an ML engineer to the UNICEF-Giga project organized by [Omdena](https://omdena.com/projects/omdenalorexgiga/) to help connect schools in developing nations worldwide to the internet.
+This repo shows my contribution as an ML engineer to the UNICEF-Giga project organized by [Omdena](https://omdena.com/projects/omdenalorexgiga/) to help connect schools in developing nations worldwide to the internet. For a more detailed walkthrough to the technical solution please refer to <a href="./Walkthrough_Model_Development.ipynb" target="_blank">Walkthrough_Model_Development.ipynb</a>
 
 > Giga, an initiative launched by UNICEF and ITU in September 2019 to connect every school to the Internet and every young person to information, opportunity and choice, is supporting the response to COVID-19, as well as looking at how connectivity can create stronger infrastructures of hope and opportunity in the "time after COVID."
 <a href="https://www.unicef.org/innovation/giga" target="_blank">
@@ -21,7 +21,7 @@ The target localization model would enhance Giga's automated school detection sy
 The detection models would be evaluated mainly using the <span style="color:red;">***mean average precision (mAP)***</span> metric for the detection masks.
 ## THE DATA
 For this project, Giga's team obtained a dataset of 6557 RGB satellite images of size 256 x 256 for Southern Sudan, which is their current ROI. Examples of the provided imagery:
-<figure>
+<figure align="center">
     <img src= './school_examples/11101303.png' width= 200>
     <img src= './school_examples/11101312.png' width= 200>
     <img src= './school_examples/11102306.png ' width= 200>
@@ -33,7 +33,7 @@ Our labeling team, lead by [Sanchit Bhavsar](https://www.linkedin.com/in/sanchit
 
 The labels were exported to a json file in the COCO format. Below is an example of the segmenation polygons annotated by the labeling team:
 
-<figure>
+<figure align="center">
 <img src="./school_examples/Annotation_example.png" width="800"/>
 <figcaption> <i><b>Left</b>: A single school polygon label | <b>Middle</b>: Multiple school polygons | <b>Right</b>: A non-school tile.</i></figcaption>
 </figure>
@@ -68,7 +68,7 @@ The model has been trained for 600 epochs with the optimizer ***Adam*** to minim
 ### TRAINING PERFORMANCE:
 The loss function was minimized to <span style="color:blue;">0.437</span> and training ***IoU*** score reached <span style="color:blue;">0.6</span>. The ***Precision @ 0.5 IoU*** of the predicted masks reached <span style="color:blue;">0.976</span> at the end of training.
 
-<figure>
+<figure align="center">
     <img src="./school_examples/training_performance.png" width="1024"/>
 </figure>
 
@@ -83,7 +83,7 @@ The model scored an ***IoU*** score of <span style="color:blue;">0.6</span> on t
 ### PREDICTION POST-PROCESSING & VISUAL INSPECTION:
 The predicted masks are post-processed to eliminate orphaned mask regions, smaller than 1000 pixels of size. A bounding box is drawn on the remaining regions. Below is an example of 25 predictions from the testset:
 
-<figure>
+<figure align="center">
         <img src= "./school_examples/predicted_masks.png" width="1200"/>
         <figcaption> <i> Testset predicted masks in blue with BBox overlays.<br>
         Single and muliple detections per tile.</i> </figcaption>
