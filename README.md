@@ -15,7 +15,7 @@ or download the notebook in this repo at </br>
 
 > Giga, an initiative launched by UNICEF and ITU in September 2019 to connect every school to the Internet and every young person to information, opportunity and choice, is supporting the response to COVID-19, as well as looking at how connectivity can create stronger infrastructures of hope and opportunity in the "time after COVID."
 
-Giga's effort is mainly focused on developing nations, where its often the case that school records are  either noncomplete or entirely nonexistent, with a lot of non-official locally sourced schools. Giga's team could benefit from an automated school discovery and locatization solution to assit their mission with speed and efficiency, while reducing the costs and often scarce manpower involved in ground surveys.
+Giga's effort is mainly focused on developing nations, where its often the case that school records are  either noncomplete or entirely nonexistent, with a lot of non-official locally sourced schools. Giga's team could benefit from an automated school discovery and localization solution to assit their mission with speed and efficiency, while reducing the costs and the often scarce manpower involved in ground surveys.
 
 [Omdena](https://omdena.com/) is an "AI for Good" company that summons voluneering efforts worldwide to develop and deploy AI tools for positive impact. Omdena organized this volunteer effort to develop an AI solution for the UNICEF to support their efforts. I had the honour of making a contribution to such endeavor, shown here in this repo.
 ## PROBLEM STATMENT:
