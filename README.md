@@ -17,7 +17,7 @@ or download the notebook in this repo at </br>
 
 Giga's effort is mainly focused on developing nations, where its often the case that school records are  either noncomplete or entirely nonexistent, with a lot of non-official locally sourced schools. Giga's team could benefit from an automated school discovery and localization solution to assit their mission with speed and efficiency, while reducing the costs and the often scarce manpower involved in ground surveys.
 
-[Omdena](https://omdena.com/) is an "AI for Good" company that summons voluneering efforts worldwide to develop and deploy AI tools for positive impact. Omdena organized this volunteer effort to develop an AI solution for the UNICEF to support their efforts. I had the honour of making a contribution to such endeavor, shown here in this repo.
+[Omdena](https://omdena.com/) is an "AI for Good" company that summons voluneering efforts worldwide to develop and deploy AI tools for positive impact. Omdena organized this volunteer effort to develop an AI solution for the UNICEF to support Giga's mission. I had the honour of making a contribution to such endeavor, shown here in this repo.
 ## PROBLEM STATMENT:
 Giga is resorting to satellite imagery instead of ground surveys to locate schools worldwide. Satellite imagery provides wide coverage and speed. Giga is developing AI systems that utilize these satellite data to automate the detection of schools, with a focus on higher recall rates, but also at an adequate precision. ***A recall first*** principle helps Giga to discover and include as much schools as possible, while maintaining an adequate precision supresses the ***false positives***, thus preventing the burnout of their ground response teams.
 
