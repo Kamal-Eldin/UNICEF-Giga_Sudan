@@ -1,6 +1,6 @@
 # UNICEF-Giga_Sudan
 ## INTRODUCTION
-This repo shows my contribution as an ML engineer to the UNICEF-Giga project organized by [Omdena](https://omdena.com/projects/omdenalorexgiga/) to help connect schools in developing nations worldwide to the internet. For a more detailed walkthrough to the technical solution please click the colab icon below:
+This repo shows my contribution as an ML engineer to the UNICEF-Giga project organized by [Omdena](https://omdena.com/projects/omdenalorexgiga/) to help connect schools in developing nations worldwide to the internet. For a more detailed walkthrough of the technical solution please click the colab icon below:
 
 <a href="https://colab.research.google.com/drive/1mCARL1iIuy3YJaQCU6-cFOR_G9fwPQ5e?usp=sharing" target="_blank">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
