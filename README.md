@@ -37,7 +37,9 @@ For this project, Giga's team obtained a dataset of 6557 RGB satellite images of
 </p>
 
 ## THE SUPERVISION SIGNAL
-Our labeling team, lead by [Sanchit Bhavsar](https://www.linkedin.com/in/sanchit-bhavsar-2aa0ba92/) annotated and reviewed Giga's dataset using [Labelbox](https://labelbox.com). Notable efforts were from [Nashwa Shokry](linkedin.com/in/nashwa-shokry-3b400630) and Purti Sharma.
+Our labeling team, lead by [Sanchit Bhavsar](https://www.linkedin.com/in/sanchit-bhavsar-2aa0ba92/) annotated and reviewed Giga's dataset using [Labelbox](https://labelbox.com). Notable efforts were from [Nashwa Shokry](linkedin.com/in/nashwa-shokry-3b400630) and Purti Sharma. 
+
+The supervision label consisted of a single or muliple polygons, such that each would define a school region. A school region is the land parcel that encompasses the main school premises plus the associated playgrounds, fields, gardens, or other facilities.
 
 The labels were exported to a json file in the COCO format. Below is an example of the segmenation polygons annotated by the labeling team:
 
