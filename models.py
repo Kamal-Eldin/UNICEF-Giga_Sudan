@@ -135,7 +135,7 @@ class fitEval(modelBuilder):
         self.len_test = len_test
         self.round = round
         self.epochs = 100
-        self.batchsize = 40
+        self.batchsize = 12
         self.trainsteps = len_train // self.batchsize
         self.valsteps = len_val // self.batchsize
         self.teststeps = len_test
@@ -313,6 +313,7 @@ class loadModel(fitEval):
     def __init__(self, simple=True, lr= 0.00001, input_shape=(256, 256, 3)) -> None:
         super().__init__(simple,lr, input_shape)
         self.weightpath = ''
+        self.lr = lr
         
     def load_model(self, weightpath):
         self.weightpath = weightpath

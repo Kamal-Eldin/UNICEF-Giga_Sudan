@@ -180,7 +180,7 @@ class augmentation:
         self.seed = 32
         self.bright_range = (.4, 1.)
         self.hue_range = 2.0
-        self.batch_size = 1
+        self.batch_size = 12
         self.rotation = None
         self.zoom = None
         self.interpolation = None
