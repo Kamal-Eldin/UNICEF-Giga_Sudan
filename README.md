@@ -70,17 +70,17 @@ The labels had to be preprocessed to create binary segmenation masks as training
 ## TRAINING & EVALUATION:
 The school class was divided into 3 sets: 3342 images for training, 836 images for validation and 1045 images for testing.
 
-The model has been trained for 600 epochs with the optimizer ***Adam*** to minimize the compound ***BCEDice_loss*** function (Dice + BCE). Training was divided into 3 main steps of 200 epochs each. The learning rate started at <span style="color:blue;">1e-3</span> at step 1, (i.e, epochs interval [0, 200]); set to <span style="color:blue;">1e-4</span> at step 2, (i.e, interval [200, 400]), and finally was set to <span style="color:blue;">1e-5</span> at the final step, (i.e, interval [400, 600]).
+The model has been trained for 600 epochs with the optimizer ***Adam*** to minimize the compound ***BCEDice_loss*** function (Dice + BCE). Training was divided into 3 main steps of 200 epochs each. The learning rate started at ***1e-3*** at step 1, (i.e, epochs interval [0, 200]); set to ***1e-4*** at step 2, (i.e, interval [200, 400]), and finally was set to ***1e-5*** at the final step, (i.e, interval [400, 600]).
 
 ### TRAINING PERFORMANCE:
-The loss function was minimized to <span style="color:blue;">0.437</span> and training ***IoU*** score reached <span style="color:blue;">0.6</span>. The ***Precision @ 0.5 IoU*** of the predicted masks reached <span style="color:blue;">0.976</span> at the end of training.
+The loss function was minimized to <span style="color:blue;">0.437</span> and training ***IoU*** score reached ***0.6***. The ***Precision @ 0.5 IoU*** of the predicted masks reached ***0.976*** at the end of training.
 
 <p align="center">
     <img src="./school_examples/training_performance.png" width="1024"/>
 </p>
 
 ### TEST PERFORMANCE:
-The model scored an ***IoU*** score of <span style="color:blue;">0.6</span> on the testset. The test ***Precision @ 0.5 IoU*** scored <span style="color:blue;">***0.931***</span> and the <span style="color:red;">***COCO mAP***</span> scored <span style="color:red;">0.296</span>. Below is ***precision curve*** per *IoU* Threshold:
+The model scored an ***IoU*** score of ***0.6*** on the testset. The test ***Precision @ 0.5 IoU*** scored ***0.931*** and the ***COCO mAP*** scored ***0.296***. Below is ***precision curve*** per *IoU* Threshold:
 
 
 <p align="center">
