@@ -80,7 +80,7 @@ The loss function was minimized to <span style="color:blue;">0.437</span> and tr
 </p>
 
 ### TEST PERFORMANCE:
-The model scored an ***IoU*** score of <span style="color:blue;">0.6</span> on the testset. The test ***Precision @ 0.5 IoU*** scored <span style="color:blue;">0.931</span> and the <span style="color:red;">***COCO mAP***</span> scored <span style="color:red;">0.296</span>. Below is ***precision curve*** per *IoU* Threshold:
+The model scored an ***IoU*** score of <span style="color:blue;">0.6</span> on the testset. The test ***Precision @ 0.5 IoU*** scored <span style="color:blue;">***0.931***</span> and the <span style="color:red;">***COCO mAP***</span> scored <span style="color:red;">0.296</span>. Below is ***precision curve*** per *IoU* Threshold:
 
 
 <p align="center">
