@@ -28,7 +28,10 @@ The target localization model would enhance Giga's automated school detection sy
 
 The detection models would be evaluated mainly using the <span style="color:red;">***mean average precision (mAP)***</span> metric for the detection masks.
 ## THE DATA
-For this project, Giga's team obtained a dataset of 6557 RGB satellite images of size 256 x 256 for Southern Sudan, which is their current ROI. Examples of the provided imagery:
+For this project, Giga's team obtained a dataset of 6557 RGB satellite images of size 256 x 256 for Southern Sudan, which is their current ROI. The satellite tiles were at a zoom level 18 (0.6 m spatial resolution) for each training sample location. The imagery were collected from MAXAR’s imagery archive under NextView license. 
+The imagery which were collected from Worldview3 sensor were composited with R, G, and B bands using natural composite method.
+Examples of the provided imagery:
+
 <p align="center">
     <img src= './school_examples/11101303.png' width= 250>
     <img src= './school_examples/11101312.png' width= 250>
