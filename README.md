@@ -75,7 +75,7 @@ The labels had to be preprocessed to create binary segmenation masks as training
 ## TRAINING & EVALUATION
 The school class was divided into 3 sets: 3342 images for training, 836 images for validation and 1045 images for testing.
 
-The model has been trained for 600 epochs with the optimizer ***Adam*** to minimize the compound ***BCEDice_loss*** function (Dice + BCE). Training was divided into 3 main steps of 200 epochs each. The learning rate started at ***1e-3*** at step 1, (i.e, epochs interval [0, 200]); set to ***1e-4*** at step 2, (i.e, interval [200, 400]), and finally was set to ***1e-5*** at the final step, (i.e, interval [400, 600]).
+The model has been trained for 600 epochs with the optimizer ***Adam*** to minimize the compound ***BCEDice_loss*** function (Dice + BCE). Training was divided into 3 main steps of 200 epochs each. The learning rate started at ***1e-3*** at step 1 (i.e, epochs interval [0, 200]); set to ***1e-4*** at step 2 (i.e, interval [200, 400]), and finally was set to ***1e-5*** at the final step (i.e, interval [400, 600]).
 
 ### TRAINING PERFORMANCE
 The loss function was minimized to <span style="color:blue;">0.437</span> and training ***IoU*** score reached ***0.6***. The ***Precision @ 0.5 IoU*** of the predicted masks reached ***0.976*** at the end of training.
